@@ -449,10 +449,63 @@ c --------------------------------------------------------------------
 c Irrigation adjustments go here
 c
 
+c --------------------------------------------------------------------
+c set i and j locations at smaller grid over which model is being run (ii,jj)
+c
+       ii = i - (istart-1)
+       jj = j - (jstart-1)
+c
+c calculate volume in runoff reservoir for land or lake
+c
+       rout = volr(ii,jj)/timer
+       volr(ii,jj) = max(volr(ii,jj) + (rin-rout)*delt,0.)
+c
+c calculate volume in baseflow reservoir, land only
+c
+c      bout = 0.75*volb(ii,jj)/timed + 0.25*volb(ii,jj)/timeg
+       bout = volb(ii,jj)/timed
+       volb(ii,jj) = max(volb(ii,jj) + (bin-bout)*delt,0.)
+c
+c----------------------------------------------------
+c calculate volume in transport reservoir
+c The idea is to calculate the volume
+c of each non-grid lake cell as usual. For the lakes
+c cells add any water volume to the volume of the
+c sill grid cell not to the local cell and don't 
+c include the (fluxin-fluxout). It will all be rectified
+c in the next loop. It is done this way to make sure that the
+c lake calculation conserves mass and is stable.
+c
+c calculate the location of the outlet for this lake (i2,j2).
+c
+       i2 = min(max(int(outnewi(i,j)-(istart-1)),0),incf)
+       j2 = min(max(int(outnewj(i,j)-(jstart-1)),0),inrf)
+c
+c lake water balance for this timestep
+c
+       temp(ii,jj) = (rout+bout)*(1.-larea(i,j))
+c
+c land water balance for this timestep.
+c
+       tempdr(ii,jj) = ((rout+
+     *            bout)*(1.-larea(i,j))-irrout
+     *           + (sfluxin(ii,jj) - fluxout(ii,jj)))*delt
+c
+c subtract any evaporation from the lake from the outlet
+c location. The outlet is the accountant for the entire lake.
+c
+      if(larea(i,j) .gt. 0.)then
+       tempdl(i2,j2) = tempdl(i2,j2) 
+     *          + ((prcpl-evapl)*larea(i,j))*delt
+      endif
+c
+      else                 !basin .ne. requested number
+       voll(ii,jj) = 0.
       endif ! End if basin check
-
-110   continue
-120   continue
+c
+ 110    continue
+ 120   continue ! End of linear resevoir model
+c
 
 132   continue
 131   continue
