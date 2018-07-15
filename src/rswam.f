@@ -10,7 +10,7 @@
 !-------------------------------------------------------------------------------
 
       subroutine rswam( dem, basin, sillh, outnewi, outnewj,
-     >                  prcpi,
+     >                  prcpi, evapi, runin, drainin,
      >                  laket, spin,
      >                  volt2)
               
@@ -444,6 +444,10 @@ c
      *     (evapi(i2,j2,icmon)*area(j)))
 c
        endif ! End daily climate loop
+       if (runin(i2,j2,km).gt.0.) then
+        !write(*,*) rin,pcpl,evapl
+        write(*,*) runin(i2,j2,km),rin
+       endif
 c
 c --------------------------------------------------------------------
 c Irrigation adjustments go here
@@ -459,6 +463,9 @@ c calculate volume in runoff reservoir for land or lake
 c
        rout = volr(ii,jj)/timer
        volr(ii,jj) = max(volr(ii,jj) + (rin-rout)*delt,0.)
+c       if (rin.gt.0.) then
+c        write(*,*) rin,rout,volr(ii,jj)
+c       endif
 c
 c calculate volume in baseflow reservoir, land only
 c
