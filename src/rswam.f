@@ -603,12 +603,96 @@ c
 c
          fluxout(ii,jj) = 0.
          sfluxin(ii,jj) = 0.
-         if (larea(i,j).gt.0) then
-          write(*,*) "B:", larea(i,j), outelv(ii,jj), areat(ii,jj) 
-         endif
 c
  112    continue
  122   continue
+c
+c--------------------------------------------------------------
+c In this loop calculate the flux out of the cell, to which direction,
+c and the sum of the fluxes into cells. Also calculate the
+c water depth and lake area (larea) for each cell. 
+c
+      do 121 j = jstart+1,jend-1
+       do 111 i = istart+1,iend-1
+c
+       if(basin(i,j) .gt. 0.)then ! Check if we are in a basin
+c
+       ii = i - (istart-1) ! Fine grid index
+       jj = j - (jstart-1)
+       iii = min(max(outnewi(i,j)-(istart-1),1.),REAL(incf)) ! Outlet
+       jjj = min(max(outnewj(i,j)-(jstart-1),1.),REAL(inrf))
+c
+c Find flow direction 
+c need to replace this with GRASS derived directions
+c
+       tmpdir = outdir(i,j) 
+c
+       j2 = j + joff(tmpdir)
+       i2 = i + ioff(tmpdir)
+       dx = (area(j)/dy+area(j2)/dy)/2.
+       dist = sqrt((dx*dx*abs(i2-i)*abs(i2-i))
+     *        + (dy*dy*abs(j2-j)*abs(j2-j)))
+       dist = max(dx,dist)
+c
+c set effective velocity of each cell. It is dependent on the
+c lake volume of the cell. For large lakes the value is quite
+c slow, for small lakes it approaches the reference value,
+c effref. For non-lake points it is a function of the
+c gradient as in Miller et al. 1994. This is fairly rough
+c and could be improved with considerations of sinuosity or
+c stream order for example.
+c
+c Invoke the top half of this if statement if you want the volume
+c of the lake to impact the river discharge velocity. It is unique
+c to each lake and should be studied before use
+c
+c       if((larea(i,j) .gt. 0.) .and.
+c    *     (voll(ii,jj) .gt. 0.))then
+c        vollocal = 1.*area(j)
+c        volref = sqrt(vollocal/volt(iii,jjj))
+c        effvel = min(effref,0.1*effref*volref)
+c        effvel = min(effref,0.08*effref*volref)
+c        effvel = max(effvel,1.0e-02)
+c       else                         !non-lake
+         ic = max(dem(i,j)-dem(i2,j2),1.)/dist
+         io = ioo/(dx/dy)   !scale reference gradient to latitude
+         effvel = effref*sqrt(ic/io)
+         effvel = min(effvel,3.0)
+c       endif
+c
+c calculate fluxout of each cell and send it as fluxin to
+c either the cell downstream if it is not a lake downstream
+c or to the outlet location. The fluxout of the cell which
+c corresponds to the sill is calculated for only that water 
+c volume in excess of the volume required to fill the lake.
+c
+c       effvel = 0.5 !alternatively could set velocity to a  constant
+c
+         fluxout(ii,jj) = max((voll(ii,jj)-volt(ii,jj))*
+     *                  (effvel/dist),0.)
+         fluxout(ii,jj) = max(min(fluxout(ii,jj),
+     *           sfluxin(ii,jj) + temp(ii,jj) +
+     *           ((voll(ii,jj)-volt(ii,jj))/(delt*2.))),0.)
+c
+c Truncate fluxout if too small for computation. 
+c
+         if(fluxout(ii,jj)/area(j) .lt. dveps) then 
+          fluxout(ii,jj) = 0. 
+         endif
+         i3 = i2-(istart-1)
+         j3 = j2-(jstart-1)
+         if((i3.gt.0).and.(i3.le.incf).and.
+     *      (j3.gt.0).and.(j3.le.inrf)) then
+          sfluxin(i3,j3) =
+     *    sfluxin(i3,j3) + fluxout(ii,jj)
+         endif
+c
+
+
+       endif              !endif for limiting calculation to a basin
+c
+ 111   continue
+ 121  continue          !end fluxout loop
 c
 
 c
