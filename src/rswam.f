@@ -15,6 +15,7 @@
      >                  volt2, voll)
               
       ! Input variables
+      integer sampi,sampj
       integer nc,nr,nrf,ncf ! Input grid dimensions coarse/fine
       integer istart,iend,jstart,jend ! Grid limits (coarse)
       integer i2start,i2end,j2start,j2end ! Fine limits
@@ -195,6 +196,8 @@ c ***** DEM ADJUSTMENTS GO HERE *****
 c
 c--------------------------------------------------------------
 c initialize variables
+      sampi=90
+      sampj=135
 c
       do 205 j = 1,inrf
        do 206 i = 1,incf
@@ -226,7 +229,6 @@ c       dvollm(i,j) = 0.
 206    continue
 205   continue
 c
-      write(*,*) "laket",laket
       do 210 j = jstart,jend
        do 220 i = istart,iend
         if(laket .eq. 0)then
@@ -307,7 +309,7 @@ c
 915    continue
 914   continue
 c
-              write(*,*)'through lake volume calc'
+      write(*,*)'through lake volume calc'
 c--------------------------------------------------------------
 c This is used if you would like to specify the location that
 c a lake will start filling from. This is useful for closed 
@@ -371,7 +373,7 @@ c
 c
 c write a few diagnostics
 c
-      write(*,*)'begin mon ',imon
+      !write(*,*)'begin mon ',imon
 c
 c start the daily loop
 c
@@ -524,18 +526,18 @@ c
          ii = i - (istart-1)
          jj = j - (jstart-1)
          dvoll(ii,jj)  = tempdr(ii,jj) + tempdl(ii,jj)
-         if ((ii.eq.100).and.(jj.eq.210)) then
-                write(*,*) iday,i,j,dvoll(ii,jj)
-         endif
+         !if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+         !       write(*,*) iday,i,j,dvoll(ii,jj)
+         !endif
          if(abs(dvoll(ii,jj))/delt/area(j) .lt. dveps) then
           dvoll(ii,jj) = 0.
          endif
          voll(ii,jj)  = max(voll(ii,jj) + dvoll(ii,jj),0.)
          tempdl(ii,jj) = 0.
          tempdr(ii,jj) = 0.
-         if ((ii.eq.100).and.(jj.eq.210)) then
-         write(*,*) dvoll(ii,jj),voll(ii,jj)
-         endif
+         !if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+         !       write(*,*) dvoll(ii,jj),voll(ii,jj)
+         !endif
 141     continue
 140    continue
        
@@ -553,37 +555,47 @@ c
          i2 = min(max(outnewi(i,j)-(istart-1),0.),REAL(incf))
          j2 = min(max(outnewj(i,j)-(jstart-1),0.),REAL(inrf))
 c
-           if(((i2 .gt. 0).and. (j2 .gt. 0)) 
-     *          .and. (laket .eq. 0))then
+         if(((i2 .gt. 0).and. (j2 .gt. 0)) 
+     *        .and. (laket .eq. 0))then
 c
+          if ((ii.eq.sampi).and.(jj.eq.sampj).and.iday.eq.15) then
+                write(*,*) i,j,ii,jj,i2,j2,laket
+                write(*,*) outnewi(i,j),outnewj(i,j),basin(i,j)
+                write(*,*) voll(i2,j2),"gt",volt(i2,j2)
+                if (voll(i2,j2) .ge. volt(i2,j2))then
+                        write(*,*) "YES"
+                else
+                        write(*,*) "NO"
+                endif
+          endif
 c if volume in basin > lake volume larea = 1. everywhere
 c outelv = sill height
 c
-            if(voll(i2,j2) .ge. volt(i2,j2))then
-              outelv(ii,jj) = max(outelv(ii,jj) + larea(i,j)*
+          if(voll(i2,j2) .ge. volt(i2,j2))then
+           outelv(ii,jj) = max(outelv(ii,jj) + larea(i,j)*
      *            dvoll(i2,j2)/areat(i2,j2),dem(i,j))  !0.0 if larea = 0.
-c            outelv(ii,jj) = sillh(ii,jj)  !simpler way of handling it
-             larea(i,j) = max(min(outelv(ii,jj)-dem(i,j),1.),0.)
+c          outelv(ii,jj) = sillh(ii,jj)  !simpler way of handling it
+           larea(i,j) = max(min(outelv(ii,jj)-dem(i,j),1.),0.)
 c
 c if there is no volume then larea = 0.
 c
-            elseif(voll(i2,j2) .eq. 0.)then 
-             larea(i,j)  = 0.
-             outelv(ii,jj) = dem(i,j)
-             areat(i2,j2) = 0.   !probably not necessary
+          elseif(voll(i2,j2) .eq. 0.)then 
+           larea(i,j)  = 0.
+           outelv(ii,jj) = dem(i,j)
+           areat(i2,j2) = 0.   !probably not necessary
 c
-            elseif((voll(i2,j2).gt.0.).and.
-     *             (voll(i2,j2).lt.volt(i2,j2)))then
+          elseif((voll(i2,j2).gt.0.).and.
+     *           (voll(i2,j2).lt.volt(i2,j2)))then
 c
 c if some lake already exists in closed basin distribute dvoll
 c evenly to those existing cells 
 c
-             if(areat(i2,j2) .gt. 0.)then
+           if(areat(i2,j2) .gt. 0.)then
 c
 c set outelv if larea > 0. Add depth of water if positive
 c or negative. 
 c
-              outelv(ii,jj) = max(outelv(ii,jj) + larea(i,j)*
+            outelv(ii,jj) = max(outelv(ii,jj) + larea(i,j)*
      *            dvoll(i2,j2)/areat(i2,j2),dem(i,j))  !0.0 if larea = 0.
 c
 c If no existing lake; set larea of outlet location = 1.
@@ -591,25 +603,26 @@ c Ideally would like to choose a kernal location in a
 c realistic location within a lake. This would be stored
 c in array basin2.
 c
-             else   !if(areat(i2,j2) .eq. 0.))then 
-             if(basin2(ii,jj) .eq. 1.)then
-              outelv(ii,jj) = max(outelv(ii,jj) +
-     *            dvoll(ii,jj)/area(j2+(jstart-1)),dem(i,j))
-              larea(i,j) = max(min(outelv(ii,jj)-dem(i,j),1.),0.)
-              areat(i2,j2) = max(area(j)*larea(i,j),0.)
+           else   !if(areat(i2,j2) .eq. 0.))then 
+            if(basin2(ii,jj) .eq. 1.)then
+             outelv(ii,jj) = max(outelv(ii,jj) +
+     *           dvoll(ii,jj)/area(j2+(jstart-1)),dem(i,j))
+             larea(i,j) = max(min(outelv(ii,jj)-dem(i,j),1.),0.)
+             areat(i2,j2) = max(area(j)*larea(i,j),0.)
 c
-             endif
-             endif
+            endif !basin2 if loop
 c
-           endif
-          endif
+           endif ! areat if loop
 c
-         else                 !basin .ne. requested number
-          voll(ii,jj) = 0.
-         endif
+          endif !voll if loop
+         endif ! i2/j2/laket loop
 c
-         fluxout(ii,jj) = 0.
-         sfluxin(ii,jj) = 0.
+        else                 !basin .ne. requested number
+         voll(ii,jj) = 0.
+        endif
+c
+        fluxout(ii,jj) = 0.
+        sfluxin(ii,jj) = 0.
 c
  112    continue
  122   continue
