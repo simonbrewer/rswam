@@ -3,7 +3,7 @@
 
 require(raster)
 dyn.load("./src/rswam1.so")
-rswam <- function(nyrs, startyear, converg = 1, laket = 0, spin = 1,
+rswam1 <- function(nyrs, startyear, converg = 1, laket = 0, spin = 1,
                   normal = 1, leap = 1, irrig = 1,
                   outnewi, outnewj, basin, dem, rivdir, mflac,
                   prcpi, evapi, runin, drainin) {
@@ -36,28 +36,30 @@ normal = 1 # 0 if use normalization, 1 if not
 leap = 2 # of years to the first leap year
 irrig = 1 # 0 if use irrigation, function 1 if not
 
-load("chadExample.RData")
+load("./data/chadExample.RData")
 
 # Geomorphology data
-outnewi = as.matrix(outnewi.r)
-outnewj = as.matrix(outnewj.r)
-basin = as.matrix(basin.r)
-dem = as.matrix(dem.r)
-rivdir = as.matrix(rivdir.r)
-mflac = as.matrix(mflac.r)
+outnewi = t(as.matrix(outnewi.r))
+outnewj = t(as.matrix(outnewj.r))
+basin = t(as.matrix(basin.r))
+dem = t(as.matrix(dem.r))
+rivdir = t(as.matrix(rivdir.r))
+mflac = t(as.matrix(mflac.r))
 
 ## Commented just to speed things up
 # Climate data
-prec = as.array(prec.r.m)
-evap = as.array(evap.r.m)
-drain = as.array(drain.r.m)
-runoff = as.array(runoff.r.m)
+prec = aperm(as.array(prec.r.m), c(2,1,3))
+evap = aperm(as.array(evap.r.m), c(2,1,3))
+drain = aperm(as.array(drain.r.m), c(2,1,3))
+runoff = aperm(as.array(runoff.r.m), c(2,1,3))
+
+demf.r = crop(dem.r, extent(prec.r.y))
 
 ## Grid dimensions
 # gridx = dim(dem)[1]
 # gridy = dim(dem)[2]
 
-hydro.out = rswam(nyrs, startyear, converg, laket, spin,
+hydro.out = rswam1(nyrs, startyear, converg, laket, spin,
                   normal, leap, irrig,
                   outnewi, outnewj, basin, 
                   dem, rivdir, mflac,
