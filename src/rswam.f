@@ -127,8 +127,8 @@ c
 c
       double precision sfluxout(incf,inrf,nmons)   !,laream(ncf,nrf,12)
 c
-      integer i,j,k,k2,km,kt,i1,j1,i2,j2,ktstep,
-     *        x,nyrs,tmpdir,i3,j3,ix,jx,startyear,ii,jj,iii,jjj
+      integer i,j,k,k2,km,kt,i1,j1,i2,j2,ktstep,x,nyrs,
+     *        tmpdir,tmpdir2,i3,j3,ix,jx,startyear,ii,jj,iii,jjj
       integer ioff(8),joff(8) 
       integer ndaypm(nmons)
 
@@ -524,14 +524,21 @@ c
          ii = i - (istart-1)
          jj = j - (jstart-1)
          dvoll(ii,jj)  = tempdr(ii,jj) + tempdl(ii,jj)
+         if ((ii.eq.100).and.(jj.eq.210)) then
+                write(*,*) iday,i,j,dvoll(ii,jj)
+         endif
          if(abs(dvoll(ii,jj))/delt/area(j) .lt. dveps) then
           dvoll(ii,jj) = 0.
          endif
          voll(ii,jj)  = max(voll(ii,jj) + dvoll(ii,jj),0.)
          tempdl(ii,jj) = 0.
          tempdr(ii,jj) = 0.
+         if ((ii.eq.100).and.(jj.eq.210)) then
+         write(*,*) dvoll(ii,jj),voll(ii,jj)
+         endif
 141     continue
 140    continue
+       
 c
 c----------------------------------------------------------------
 c Distribute the dvoll of this timestep roughly into the existing lake area
@@ -646,19 +653,19 @@ c Invoke the top half of this if statement if you want the volume
 c of the lake to impact the river discharge velocity. It is unique
 c to each lake and should be studied before use
 c
-c       if((larea(i,j) .gt. 0.) .and.
-c    *     (voll(ii,jj) .gt. 0.))then
-c        vollocal = 1.*area(j)
-c        volref = sqrt(vollocal/volt(iii,jjj))
-c        effvel = min(effref,0.1*effref*volref)
-c        effvel = min(effref,0.08*effref*volref)
-c        effvel = max(effvel,1.0e-02)
-c       else                         !non-lake
-         ic = max(dem(i,j)-dem(i2,j2),1.)/dist
-         io = ioo/(dx/dy)   !scale reference gradient to latitude
-         effvel = effref*sqrt(ic/io)
-         effvel = min(effvel,3.0)
-c       endif
+c      if((larea(i,j) .gt. 0.) .and.
+c    *    (voll(ii,jj) .gt. 0.))then
+c       vollocal = 1.*area(j)
+c       volref = sqrt(vollocal/volt(iii,jjj))
+c       effvel = min(effref,0.1*effref*volref)
+c       effvel = min(effref,0.08*effref*volref)
+c       effvel = max(effvel,1.0e-02)
+c      else                         !non-lake
+        ic = max(dem(i,j)-dem(i2,j2),1.)/dist
+        io = ioo/(dx/dy)   !scale reference gradient to latitude
+        effvel = effref*sqrt(ic/io)
+        effvel = min(effvel,3.0)
+c      endif
 c
 c calculate fluxout of each cell and send it as fluxin to
 c either the cell downstream if it is not a lake downstream
@@ -668,35 +675,156 @@ c volume in excess of the volume required to fill the lake.
 c
 c       effvel = 0.5 !alternatively could set velocity to a  constant
 c
-         fluxout(ii,jj) = max((voll(ii,jj)-volt(ii,jj))*
+        fluxout(ii,jj) = max((voll(ii,jj)-volt(ii,jj))*
      *                  (effvel/dist),0.)
-         fluxout(ii,jj) = max(min(fluxout(ii,jj),
+        fluxout(ii,jj) = max(min(fluxout(ii,jj),
      *           sfluxin(ii,jj) + temp(ii,jj) +
      *           ((voll(ii,jj)-volt(ii,jj))/(delt*2.))),0.)
 c
 c Truncate fluxout if too small for computation. 
 c
-         if(fluxout(ii,jj)/area(j) .lt. dveps) then 
-          fluxout(ii,jj) = 0. 
-         endif
-         i3 = i2-(istart-1)
-         j3 = j2-(jstart-1)
-         if((i3.gt.0).and.(i3.le.incf).and.
+        if(fluxout(ii,jj)/area(j) .lt. dveps) then 
+         fluxout(ii,jj) = 0. 
+        endif
+        i3 = i2-(istart-1)
+        j3 = j2-(jstart-1)
+        if((i3.gt.0).and.(i3.le.incf).and.
      *      (j3.gt.0).and.(j3.le.inrf)) then
-          sfluxin(i3,j3) =
+         sfluxin(i3,j3) =
      *    sfluxin(i3,j3) + fluxout(ii,jj)
-         endif
+        endif
 c
-
-
+c--------------------------------------------------------------
+c Adjust height of water column in each cell using the cellular
+c automata. Distribute water height within a lake basin only
+c This flattens the lake surface so that there are no hills or
+c valleys due to differences in the local water budget.
+c
+       if((laket .eq. 0) .and. ((iii .ne. 0).and. (jjj.ne.0)))then
+c
+        if((outelv(ii,jj) .gt. dem(i,j)) .and.
+     *     (voll(iii,jjj) .lt.
+     *      volt(iii,jjj)))then
+c
+         if((voll(iii,jjj) .ge. 0.).and.
+     *      (sillh(i,j) .gt. 0.))then
+c
+          tmpdir2 = 0
+          tmph = outelv(ii,jj)
+          do 501 k2 = 1,8
+           j3 = (j + joff(k2))-(jstart-1)
+           i3 = (i + ioff(k2))-(istart-1)
+           if((outelv(i3,j3) .lt. outelv(ii,jj)) .and.
+     *        (sillh(i3+(istart-1),j3+(jstart-1)) .eq. sillh(i,j)))then
+            if(outelv(i3,j3) .lt. tmph)then
+             tmpdir2 = k2
+             tmph = outelv(i3,j3)
+            endif
+           endif
+501       continue
+c
+          if(tmpdir2 .ne. 0.)then
+c
+           j3 = (j + joff(tmpdir2))-(jstart-1)
+           i3 = (i + ioff(tmpdir2))-(istart-1)
+c
+           gridif = min(max((outelv(ii,jj) -
+     *               outelv(i3,j3)),0.),
+     *               max((outelv(ii,jj) - dem(i,j)),0.))
+           if(abs(gridif) .lt. grideps) then
+            gridif = 0.
+           endif
+           gridif = gridif*area(j)*0.5  !move only 0.5 of difference
+c
+           outelv(i3,j3) = outelv(i3,j3) +
+     *           gridif/area(j3+(jstart-1))
+           outelv(ii,jj) = outelv(ii,jj) -
+     *           gridif/area(j)
+c
+          endif
+c
+         else
+          larea(i,j) = 0.
+          outelv(ii,jj) = dem(i,j)
+          areat(iii,jjj) = 0.
+c 
+         endif                !voll(i2,j2) .ge. 0.
+c
+        endif                !outelv .gt. dem
+c
+c Set lake area = either; 1 if depth is greater than 1 meter, to
+c a % of the lake cell equal to the depth of water, or to 0. if
+c depth = 0.  depth = outelv-grid
+c Adjust the total lake area (areat) to represent current larea.
+c Do this by first subtracting current larea from total then
+c adding new larea to total. If larea = 0. area added = 0.
+c
+        if((outnewi(i,j) .gt. 0.) .and.
+     *     (voll(iii,jjj) .lt. volt(iii,jjj)))then
+c
+         if((voll(iii,jjj) .gt. 0.) .and.
+     *       (sillh(i,j) .gt. 0.))then
+c
+          ix = min(max(int(outnewi(i,j)-(istart-1)),1),incf)
+          jx = min(max(int(outnewj(i,j)-(jstart-1)),1),inrf)
+          areat(ix,jx) = max(areat(ix,jx) - area(j)*
+     *         larea(i,j),0.)
+          larea(i,j) = max(min(outelv(ii,jj)-
+     *         dem(i,j),1.),0.)
+          areat(ix,jx) = max(areat(ix,jx) + area(j)*
+     *         larea(i,j),0.) !previous
+         else
+          larea(i,j) = 0.
+          outelv(ii,jj) = dem(i,j)
+          areat(iii,jjj) = 0.
+         endif
+        endif
+c
+        laream(ii,jj) = (laream(ii,jj)+((outelv(ii,jj)-dem(i,j))
+     *                        /(ndaypm(imon)*nspday)))
+        if(outelv(ii,jj)-dem(i,j) .lt. 0.1)then
+         laream(ii,jj) = 0.
+        endif
+c
+       endif        !laket = 0
+c
        endif              !endif for limiting calculation to a basin
 c
- 111   continue
- 121  continue          !end fluxout loop
+111    continue
+121   continue          !end fluxout loop
 c
 
 c
 132   continue
+c
+c This is a check to make sure that the volume of water stored in
+c the lakes (volchk) is equal to the amount of water that is in
+c voll. This tells me mass conservation is taking place. It is
+c possible that it may not be conserved if I make a mistake in
+c the way water is spread acros the surface.
+c
+      do 511 j = jstart+1,jend-1
+       do 521 i = istart+1,iend-1
+        ii = i - (istart-1)
+        jj = j - (jstart-1)
+        volchk = volchk + ((outelv(ii,jj)-dem(i,j))
+     *           *area(j))*larea(i,j)
+c        if (iyear.eq.spin+1) then
+c                write(*,*) outelv(ii,jj),dem(i,j)
+c        endif
+521    continue
+511   continue
+c
+c write thee out if you are interested in checking the mass conservation
+c
+c      write(308,*)'month = ',imon
+c      write(308,*)'voll at step ',ktstep,'  = ',
+c    *              voll(2343-(istart-1),969-(jstart-1))
+c      write(308,*)'volchk at step ',ktstep,'  = ',volchk
+c      write(*,*)'volchk = ',volchk
+c      write(308,*)
+       volchk = 0.
+c
 131   continue
 130   continue
       write(*,*)'************'
