@@ -9,7 +9,7 @@
 ! Ver. 0.3 
 !-------------------------------------------------------------------------------
 
-      subroutine rswam( dem, basin, sillh, outnewi, outnewj,
+      subroutine rswam( dem, basin, outdir, sillh, outnewi, outnewj,
      >                  prcpi, evapi, runin, drainin,
      >                  laket, spin,
      >                  volt2, voll)
@@ -562,11 +562,11 @@ c
                 write(*,*) i,j,ii,jj,i2,j2,laket
                 write(*,*) outnewi(i,j),outnewj(i,j),basin(i,j)
                 write(*,*) voll(i2,j2),"gt",volt(i2,j2)
-                if (voll(i2,j2) .ge. volt(i2,j2))then
-                        write(*,*) "YES"
-                else
-                        write(*,*) "NO"
-                endif
+c                if (voll(i2,j2) .ge. volt(i2,j2))then
+c                        write(*,*) "YES"
+c                else
+c                        write(*,*) "NO"
+c                endif
           endif
 c if volume in basin > lake volume larea = 1. everywhere
 c outelv = sill height
@@ -837,6 +837,44 @@ c      write(308,*)'volchk at step ',ktstep,'  = ',volchk
 c      write(*,*)'volchk = ',volchk
 c      write(308,*)
        volchk = 0.
+c
+c Write monthly flux to output file. This can be modified to write out other
+c variables if one wishes.
+c
+c      write(35,*)iyear,iwmon,' ','Chad areat = ',
+c    *            areat(2343-(istart-1),969-(jstart-1))/1.e+6
+c
+       evapm = 0.    !variable to sum evap over entire lake basin
+        do j = jstart,jend
+         do i = istart,iend
+         !if (sillh(i,j).eq.305.) then
+         !        write(*,*) sillh(i,j),basin(i,j)
+         !endif
+          ii = i - (istart-1)
+          jj = j - (jstart-1)
+          elevm(ii,jj) = 0.
+          lakem(ii,jj) = 0.
+          deptm(ii,jj) = 0.
+          sflux(ii,jj) = 0.
+c         vollm(ii,jj) = 0.
+          aream(ii,jj) = 0.
+         if(laream(ii,jj) .gt. 0.)then
+          elevm(ii,jj) = laream(ii,jj)+dem(i,j)
+          lakem(ii,jj) = larea(i,j)
+          deptm(ii,jj) = laream(ii,jj)
+          evapm = evapm + evapl*larea(i,j)
+         endif
+         sflux(ii,jj) = sfluxout(ii,jj,imon)
+c        vollm(ii,jj) = vollout(ii,jj,imon)/1.e+09
+c        dvollm(ii,jj) = dvoll(ii,jj)
+         aream(ii,jj) = max(areat(ii,jj)/1.e+06,0.)
+c        aream(ii,jj) = volt(ii,jj)
+c        deptm(ii,jj) = basin2(ii,jj)
+         laream(ii,jj) = 0.
+        enddo
+       enddo
+c
+       write(*,*)'evapm  = ',evapm     !sum of basin lake evaporation
 c
 131   continue
 130   continue

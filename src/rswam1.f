@@ -13,7 +13,7 @@
      *                     normal, leap, irrig,
 c     *                     nc, nr, ncf, nrf,
      *                     outnewi, outnewj, basin, 
-     *                     dem, rivdir, mflac,
+     *                     dem, outdir, sillh,
      *                     prcpi, evapi, runin, drainin )
       !-------------------------------------------------------------------------
       ! Runs one iteration of hydra model
@@ -482,7 +482,6 @@ c        iwmon = int((tyear-2)*12 + imon)
          iwmon = imon
          icmon = int(((startyear-1)*12)+imon)
         endif
-       write(*,*)'icmon ',icmon
 c
 c re-initialize some variables each month.
 c
@@ -995,6 +994,9 @@ c
        evapm = 0.    !variable to sum evap over entire lake basin
         do j = jstart,jend
          do i = istart,iend
+         !if (sillh(i,j).eq.305.) then
+         !        write(*,*) sillh(i,j),basin(i,j)
+         !endif
           ii = i - (istart-1)
           jj = j - (jstart-1)
           elevm(ii,jj) = 0.

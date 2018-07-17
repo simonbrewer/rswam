@@ -19,7 +19,7 @@ rswam1 <- function(nyrs, startyear, converg = 1, laket = 0, spin = 1,
                    irrig = as.integer(irrig),
                    outnewi = as.double(outnewi), outnewj = as.double(outnewj),
                    basin = as.double(basin), dem = as.double(dem),
-                   rivdir = as.double(rivdir), mflac = as.double(mflac),
+                   rivdir = as.double(rivdir), sillh = as.double(mflac),
                    prcpi = as.double(prec), evapi = as.double(evap),
                    runin = as.double(runoff), drainin = as.double(drain))
   return(simcf)
@@ -54,6 +54,8 @@ drain = aperm(as.array(drain.r.m), c(2,1,3))
 runoff = aperm(as.array(runoff.r.m), c(2,1,3))
 
 demf.r = crop(dem.r, extent(prec.r.y))
+basinf.r = crop(basin.r, extent(prec.r.y))
+mflacf.r = crop(mflac.r, extent(prec.r.y))
 
 ## Grid dimensions
 # gridx = dim(dem)[1]

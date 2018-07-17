@@ -66,6 +66,7 @@ dyn.load("./src/rswam.so")
 simcf = .Fortran("rswam", 
                  dem = as.double(dem),
                  basin = as.double(basin),
+                 outdir = as.double(rivdir),
                  sillh = as.double(mflac),
                  outnewi = as.double(outnewi),
                  outnewj = as.double(outnewj),
