@@ -166,7 +166,7 @@ c
         !if(basin(i,j) .eq. 40225.)chadarea = chadarea + area(j)
        enddo
       enddo
-      write(*,*)'total area of Grid (km2) = ',totarea/1.e+06 
+      write(*,*)'total area of Grid (km2) = ',totarea/1.e+06,phi 
 c      write(*,*)'test cell dem = ',dem(108+2245-1,1+799-1)
 c      write(*,*)'test cell ppt = ',prcpi(1,36,12)
 c      write(*,*)'total area of Basin (km2) = ',chadarea/1.e+06 
@@ -252,36 +252,36 @@ c
 c--------------------------------------------------------------
 c convert input from mm/day to m/s (could be pre-processed?)
 c
-c      do 334 k = 1,nmons
-c       do 335 j = 1,inr
-c        do 336 i = 1,inc
+      do 334 k = 1,nmons
+       do 335 j = 1,inr
+        do 336 i = 1,inc
+
+         if(runin(i,j,k) .ge. 1.e+20) then
+          runin(i,j,k) = 0.
+         endif
+         if(drainin(i,j,k) .ge. 1.e+20) then 
+          drainin(i,j,k) = 0.
+         endif
+         if(prcpi(i,j,k) .ge. 1.e+20) then 
+          prcpi(i,j,k) = 0.
+         endif
+         if(evapi(i,j,k) .ge. 1.e+20) then 
+          evapi(i,j,k) = 0.
+         endif
 c
-c         if(runin(i,j,k) .ge. 1.e+20) then
-c          runin(i,j,k) = 0.
-c         endif
-c         if(drainin(i,j,k) .ge. 1.e+20) then 
-c          drainin(i,j,k) = 0.
-c         endif
-c         if(prcpi(i,j,k) .ge. 1.e+20) then 
-c          prcpi(i,j,k) = 0.
-c         endif
-c         if(evapi(i,j,k) .ge. 1.e+20) then 
-c          evapi(i,j,k) = 0.
-c         endif
-c
-c         runin(i,j,k)   = max((runin(i,j,k))/0.864e+8,0.)     !IBIS data
-c         drainin(i,j,k) = max((drainin(i,j,k))/0.864e+8,0.)   !IBIS data
-c         prcpi(i,j,k)   = max((prcpi(i,j,k))/0.864e+8,0.)     !IBIS data
-c         evapi(i,j,k)   = max((evapi(i,j,k))/0.864e+8,0.)     !IBIS data
+         runin(i,j,k)   = max((runin(i,j,k))/0.864e+8,0.)     !IBIS data
+         drainin(i,j,k) = max((drainin(i,j,k))/0.864e+8,0.)   !IBIS data
+         prcpi(i,j,k)   = max((prcpi(i,j,k))/0.864e+8,0.)     !IBIS data
+         evapi(i,j,k)   = max((evapi(i,j,k))/0.864e+8,0.)     !IBIS data
 c
 c Test to see response of open lake
 c
 c       evapi(i,j,k)   = 0.
 c       runin(i,j,k)   = runin(i,j,k)*100.
 c
-c 336    continue
-c 335   continue
-c 334  continue
+ 336    continue
+ 335   continue
+ 334  continue
 c
 
 c
@@ -375,7 +375,7 @@ c
 c
 c write a few diagnostics
 c
-      !write(*,*)'begin mon ',imon
+      write(*,*)'begin mon ',imon
 c
 c start the daily loop
 c
@@ -452,10 +452,10 @@ c       if (runin(i2,j2,km).gt.0.) then
 c        !write(*,*) rin,pcpl,evapl
 c        write(*,*) runin(i2,j2,km),rin
 c       endif
-       if ((ii.eq.sampi).and.(jj.eq.sampj)) then
-               write(*,*) prcpi(i2,j2,km),area(j)
-               write(*,*) rin,pcpl,evapl
-       endif
+c       if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+c               write(*,*) prcpi(i2,j2,km),area(j)
+c               write(*,*) rin,pcpl,evapl
+c       endif
  
 c
 c --------------------------------------------------------------------

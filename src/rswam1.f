@@ -169,16 +169,16 @@ c
       enddo
 c
       totarea = 0.
-      chadarea = 0.
+      !chadarea = 0.
       do j = 1,nrf
        do i = 1,ncf
         !write(*,*) dem(i,j)
         if(dem(i,j) .ge. 1.)totarea = totarea + area(j)
-        if(basin(i,j) .eq. 40225.)chadarea = chadarea + area(j)
+        !if(basin(i,j) .eq. 40225.)chadarea = chadarea + area(j)
        enddo
       enddo
-      write(*,*)'total area of Grid (km2) = ',totarea/1.e+06 
-      write(*,*)'total area of Basin (km2) = ',chadarea/1.e+06 
+      write(*,*)'total area of Grid (km2) = ',totarea/1.e+06,phi 
+c      write(*,*)'total area of Basin (km2) = ',chadarea/1.e+06 
 c
 
 c--------------------------------------------------------------
@@ -244,7 +244,6 @@ c
       sampi=90
       sampj=135
 c
-
       do 205 j = 1,inrf
        do 206 i = 1,incf
         ii = i + (istart-1)
@@ -588,10 +587,10 @@ c
 c
          endif
          !write(*,*) rin,prcpl,evapl
-        if ((ii.eq.sampi).and.(jj.eq.sampj)) then
-                !write(*,*) prcpi(i2,j2,km),area(j)
-                !write(*,*) rin,pcpl,evapl
-        endif
+c        if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+c                write(*,*) prcpi(i2,j2,km),area(j)
+c                write(*,*) rin,pcpl,evapl
+c        endif
  
 c
 c --------------------------------------------------------------------
