@@ -19,12 +19,14 @@ c     *                     nc, nr, ncf, nrf,
       ! Runs one iteration of hydra model
       !-------------------------------------------------------------------------
       ! Input variables
+      integer sampi,sampj
+
       integer nc,nr,nrf,ncf,istart,iend,jstart,jend,
      *        i2start,i2end,j2start,j2end,i3start,i3end,
      *        j3start,j3end,inc,inr,incf,inrf,nmons,inity
       double precision real circ,dy,dx,pi,rad,phi,delt,res,ic,io,ioo
       double precision n,mean,sum,dgper,scale2,totarea,vollocal,volref,
-     *     laketot,normalx,dismean,evapm,chadarea,leap
+     *     laketot,normalx,dismean,evapm,lareat,chadarea,leap
       double precision grideps,dveps,gridif
 c     real grideps,dveps,gridif
       integer itime, iyear,imon,iday,step,icmon,iwmon,converg,
@@ -239,6 +241,10 @@ c
 c--------------------------------------------------------------
 c initialize variables
 c
+      sampi=90
+      sampj=135
+c
+
       do 205 j = 1,inrf
        do 206 i = 1,incf
         ii = i + (istart-1)
@@ -582,6 +588,11 @@ c
 c
          endif
          !write(*,*) rin,prcpl,evapl
+        if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+                !write(*,*) prcpi(i2,j2,km),area(j)
+                !write(*,*) rin,pcpl,evapl
+        endif
+ 
 c
 c --------------------------------------------------------------------
 c TEST
@@ -992,6 +1003,8 @@ c      write(35,*)iyear,iwmon,' ','Chad areat = ',
 c    *            areat(2343-(istart-1),969-(jstart-1))/1.e+6
 c
        evapm = 0.    !variable to sum evap over entire lake basin
+       evapt = 0.    !variable to sum evap over entire lake basin
+       lareat = 0.    !variable to sum evap over entire lake basin
         do j = jstart,jend
          do i = istart,iend
          !if (sillh(i,j).eq.305.) then
@@ -1010,7 +1023,9 @@ c         vollm(ii,jj) = 0.
           lakem(ii,jj) = larea(i,j)
           deptm(ii,jj) = laream(ii,jj)
           evapm = evapm + evapl*larea(i,j)
+          lareat = lareat + larea(i,j)
          endif
+         evapt = evapt + evapl*area(j)
          sflux(ii,jj) = sfluxout(ii,jj,imon)
 c        vollm(ii,jj) = vollout(ii,jj,imon)/1.e+09
 c        dvollm(ii,jj) = dvoll(ii,jj)
@@ -1022,6 +1037,8 @@ c        deptm(ii,jj) = basin2(ii,jj)
        enddo
 c
        write(*,*)'evapm  = ',evapm     !sum of basin lake evaporation
+       write(*,*)'evapt  = ',evapt     !sum of basin lake evaporation
+       write(*,*)'lareat  = ',lareat    !total lake area
 c
  131   continue   ! end imonth loop
 c

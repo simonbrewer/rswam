@@ -28,6 +28,8 @@
       double precision scale2 ! Number of fine cells per coarse
       double precision totarea ! Total area of study region
       double precision evapm ! Used to calculate basin evaporation
+      double precision evapt ! Used to calculate total evaporation
+      double precision lareat ! Used to calculate total lake area
  
       double precision circ,dy,dx,pi,rad,phi
       double precision delt,res,ic,io,ioo ! time step, velocity variable
@@ -450,6 +452,11 @@ c       if (runin(i2,j2,km).gt.0.) then
 c        !write(*,*) rin,pcpl,evapl
 c        write(*,*) runin(i2,j2,km),rin
 c       endif
+       if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+               write(*,*) prcpi(i2,j2,km),area(j)
+               write(*,*) rin,pcpl,evapl
+       endif
+ 
 c
 c --------------------------------------------------------------------
 c Irrigation adjustments go here
@@ -559,9 +566,9 @@ c
      *        .and. (laket .eq. 0))then
 c
           if ((ii.eq.sampi).and.(jj.eq.sampj).and.iday.eq.15) then
-                write(*,*) i,j,ii,jj,i2,j2,laket
-                write(*,*) outnewi(i,j),outnewj(i,j),basin(i,j)
-                write(*,*) voll(i2,j2),"gt",volt(i2,j2)
+                !write(*,*) i,j,ii,jj,i2,j2,laket
+                !write(*,*) outnewi(i,j),outnewj(i,j),basin(i,j)
+                !write(*,*) voll(i2,j2),"gt",volt(i2,j2)
 c                if (voll(i2,j2) .ge. volt(i2,j2))then
 c                        write(*,*) "YES"
 c                else
@@ -845,6 +852,9 @@ c      write(35,*)iyear,iwmon,' ','Chad areat = ',
 c    *            areat(2343-(istart-1),969-(jstart-1))/1.e+6
 c
        evapm = 0.    !variable to sum evap over entire lake basin
+       evapt = 0.    !variable to sum evap over entire lake basin
+       lareat = 0.    !variable to sum evap over entire lake basin
+ 
         do j = jstart,jend
          do i = istart,iend
          !if (sillh(i,j).eq.305.) then
@@ -863,7 +873,9 @@ c         vollm(ii,jj) = 0.
           lakem(ii,jj) = larea(i,j)
           deptm(ii,jj) = laream(ii,jj)
           evapm = evapm + evapl*larea(i,j)
+          lareat = lareat + larea(i,j)
          endif
+         evapt = evapt + evapl*area(j)
          sflux(ii,jj) = sfluxout(ii,jj,imon)
 c        vollm(ii,jj) = vollout(ii,jj,imon)/1.e+09
 c        dvollm(ii,jj) = dvoll(ii,jj)
@@ -875,6 +887,8 @@ c        deptm(ii,jj) = basin2(ii,jj)
        enddo
 c
        write(*,*)'evapm  = ',evapm     !sum of basin lake evaporation
+       write(*,*)'evapt  = ',evapt     !sum of basin lake evaporation
+       write(*,*)'lareat  = ',lareat    !total lake area
 c
 131   continue
 130   continue
