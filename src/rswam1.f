@@ -14,7 +14,8 @@
 c     *                     nc, nr, ncf, nrf,
      *                     outnewi, outnewj, basin, 
      *                     dem, outdir, sillh,
-     *                     prcpi, evapi, runin, drainin )
+     *                     prcpi, evapi, runin, drainin,
+     *                     outelv, lakem, lakevolm, lakevola )
       !-------------------------------------------------------------------------
       ! Runs one iteration of hydra model
       !-------------------------------------------------------------------------
@@ -26,7 +27,7 @@ c     *                     nc, nr, ncf, nrf,
      *        j3start,j3end,inc,inr,incf,inrf,nmons,inity
       double precision real circ,dy,dx,pi,rad,phi,delt,res,ic,io,ioo
       double precision n,mean,sum,dgper,scale2,totarea,vollocal,volref,
-     *     laketot,normalx,dismean,evapm,lareat,chadarea,leap
+     *        laketot,normalx,dismean,evapm,lareat,chadarea,leap
       double precision grideps,dveps,gridif
 c     real grideps,dveps,gridif
       integer itime, iyear,imon,iday,step,icmon,iwmon,converg,
@@ -137,6 +138,11 @@ c
       double precision lonfst,latfst
       parameter(lonfst = (-180.+((i2start-1)*dgper))+(.5*(1/12.)))
       parameter(latfst = (90.-((j2start-1)*dgper))-(.5*(1/12.)))
+c
+c variables for tracking convergence
+c
+      double precision lakevolm(nmons,spin+nyrs)
+      double precision lakevola(spin+nyrs)
 
 c--------------------------------------------------------------
 c Define lat and lon grids for writing out 5x5' data.
@@ -288,6 +294,8 @@ c
  220   continue
  210  continue
 c
+       lakevolm(:,:) = 0.
+       lakevola(:) = 0.
 
 c--------------------------------------------------------------
 c convert input from mm/day to m/s
@@ -985,6 +993,10 @@ c
      *           *area(j))*larea(i,j)
         enddo
        enddo
+       lakevolm(imon,iyear) = volchk
+       lakevola(iyear) = lakevola(iyear) + volchk
+       !write(*,*) imon,iyear,lakevolm(imon,iyear)
+       write(*,*) imon,iyear,volchk,lakevola(iyear)
 c
 c write thee out if you are interested in checking the mass conservation
 c

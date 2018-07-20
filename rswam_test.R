@@ -79,6 +79,11 @@ simcf = .Fortran("rswam",
 
   stop()
 
+## Output
+xx = setValues(demf.r, hydro.out$outelv)
+plot(xx)
+plot(xx-demf.r)
+
 ## Volume check
 volt.r = setValues(demf.r, simcf$volt2)
 plot(crop(volt.r, extent(mflac.r, 799, 1014, 2245, 2460)))
