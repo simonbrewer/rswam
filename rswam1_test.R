@@ -2,8 +2,8 @@
 ## Test case (runs Chad example)
 
 require(raster)
-dyn.load("./src/rswam1.so")
-rswam1 <- function(nyrs, startyear, converg = 1, laket = 0, spin = 1,
+dyn.load("./src/rswam1_testing.so")
+rswam1 <- function(nyrs, startyear, converg = 0, laket = 0, spin = 1,
                   normal = 1, leap = 1, irrig = 1,
                   outnewi, outnewj, basin, dem, rivdir, mflac,
                   prcpi, evapi, runin, drainin,
@@ -34,7 +34,7 @@ nyrs = 1 # of years to run the model after January 1937
 startyear = 1 # year to start run (from January 1937) 
 converg = 1 # 0 if set convergence helper, 1 if not
 laket = 0 # 0 if predict lakes, 1 if parameterized with Cogley obs, 2 if with previously simulated
-spin = 250  # number of spin-up years to run before reading transient data
+spin = 0  # number of spin-up years to run before reading transient data
 normal = 1 # 0 if use normalization, 1 if not
 leap = 2 # of years to the first leap year
 irrig = 1 # 0 if use irrigation, function 1 if not
@@ -72,7 +72,8 @@ hydro.out = rswam1(nyrs, startyear, converg, laket, spin,
                   runin=runoff, drainin=drain,
                   gridxf, gridyf)
 
-save(hydro.out, file=paste("rswam1_out_",spin,".RData"))
+stop()
+save(hydro.out, file=paste0("rswam1_out_",spin,".RData"))
 outelv.r = setValues(demf.r, hydro.out$outelv)
 plot(outelv.r)
 plot(outelv.r-demf.r)

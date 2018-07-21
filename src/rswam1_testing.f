@@ -485,6 +485,7 @@ c       endif
 c
 c monthly loop
 c
+c       do 131 imon = 1,12
        do 131 imon = 1,12
 c
 c calculate the number of months from start of run, not counting the 
@@ -515,6 +516,7 @@ c
 c start the daily loop
 c
        do 132 iday = 1,ndaypm(imon)
+c       do 132 iday = 1,1
 c
 c calculate the number of days from start of run
 c
@@ -598,10 +600,11 @@ c
 c
          endif
          !write(*,*) rin,prcpl,evapl
-c        if ((ii.eq.sampi).and.(jj.eq.sampj)) then
-c                write(*,*) prcpi(i2,j2,km),area(j)
-c                write(*,*) rin,pcpl,evapl
-c        endif
+c         if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+c                 write(*,*) icmon,iday
+c                 write(*,*) prcpi(i2,j2,icmon),prcpi(i2,j2,km),prcpl
+c                 write(*,*) evapi(i2,j2,icmon),evapi(i2,j2,km),evapl
+c         endif
  
 c
 c --------------------------------------------------------------------
@@ -654,12 +657,21 @@ c calculate volume in runoff reservoir for land or lake
 c
          rout = volr(ii,jj)/timer
          volr(ii,jj) = max(volr(ii,jj) + (rin-rout)*delt,0.)
+         if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+                 write(*,*) "r",rin,rout
+                 write(*,*) "r",volr(ii,jj)
+         endif
 c
 c calculate volume in baseflow reservoir, land only
 c
 c        bout = 0.75*volb(ii,jj)/timed + 0.25*volb(ii,jj)/timeg
          bout = volb(ii,jj)/timed
          volb(ii,jj) = max(volb(ii,jj) + (bin-bout)*delt,0.)
+         if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+                 write(*,*) "b",bin,bout
+                 write(*,*) "b",volb(ii,jj)
+         endif
+ 
 c----------------------------------------------------
 c calculate volume in transport reservoir
 c The idea is to calculate the volume
