@@ -9,10 +9,13 @@
 ! Ver. 0.3 
 !-------------------------------------------------------------------------------
 
-      subroutine rswam( dem, basin, outdir, sillh, outnewi, outnewj,
-     >                  prcpi, evapi, runin, drainin,
-     >                  laket, spin,
-     >                  volt2, voll)
+      subroutine rswam( nyrs, startyear, converg, laket, spin,
+     *                     normal, leap, irrig,
+     *                     outnewi, outnewj, basin, 
+     *                     dem, outdir, sillh,
+     *                     prcpi, evapi, runin, drainin,
+     *                     outelv, lakem, 
+     *                     lakevolm, lakevola )
               
       ! Input variables
       integer sampi,sampj
@@ -381,8 +384,12 @@ c start the daily loop
 c
       do 132 iday = 1,ndaypm(imon)
 c
-c start first spatial loop.
-c note that the subdaily loop has been removed
+c start first spatial loop: linear reservoir model
+c model is:
+c dWV/dt = rin*(1-WA) + (P-E)*WA + sum(Fin) - Fout
+c
+c Fout = max(((WEl - WEd)*A),0) * u/D
+c u = 0.003 m s-1; D is distance between centers
 c
       do 120 j = jstart+1,jend-1
       do 110 i = istart+1,iend-1
@@ -449,12 +456,12 @@ c
 c
        endif ! End daily climate loop
 c       if (runin(i2,j2,km).gt.0.) then
-c        !write(*,*) rin,pcpl,evapl
+c        !write(*,*) rin,prcpl,evapl
 c        write(*,*) runin(i2,j2,km),rin
 c       endif
 c       if ((ii.eq.sampi).and.(jj.eq.sampj)) then
 c               write(*,*) prcpi(i2,j2,km),area(j)
-c               write(*,*) rin,pcpl,evapl
+c               write(*,*) rin,prcpl,evapl
 c       endif
  
 c
@@ -511,6 +518,7 @@ c subtract any evaporation from the lake from the outlet
 c location. The outlet is the accountant for the entire lake.
 c
       if(larea(i,j) .gt. 0.)then
+              write(*,*) larea(i,j)
        tempdl(i2,j2) = tempdl(i2,j2) 
      *          + ((prcpl-evapl)*larea(i,j))*delt
       endif
@@ -814,7 +822,6 @@ c
 121   continue          !end fluxout loop
 c
 
-c
 132   continue
 c
 c This is a check to make sure that the volume of water stored in
