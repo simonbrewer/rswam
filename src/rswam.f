@@ -120,12 +120,11 @@ c
      *     volb(incf,inrf),volr(incf,inrf),areat(incf,inrf),
      *     tempdl(incf,inrf),tempdr(incf,inrf),volt(incf,inrf),
      *     basin2(incf,inrf),temp(incf,inrf)
-      double precision volt2(incf,inrf)
       double precision dem(ncf,nrf),larea(ncf,nrf),basin(ncf,nrf),
      *     outdir(ncf,nrf),sillh(ncf,nrf),
      *     outnewi(ncf,nrf),outnewj(ncf,nrf)
       double precision dvoll(incf,inrf),outelv(incf,inrf),
-     *     voll(incf,inrf)
+     *     voll(incf,inrf),fin(incf,inrf),fout(incf,inrf)
 c 
       double precision sflux(incf,inrf),elevm(incf,inrf),   !vollm(incf,inrf),
      *     deptm(incf,inrf),  !dvollm(incf,inrf),
@@ -198,6 +197,36 @@ c     timed = timer     !for IBIS runs, which already calculates residence time
 
 c--------------------------------------------------------------
 c ***** DEM ADJUSTMENTS GO HERE *****
+c THESE ARE CORRECTIONS TO THE DEM SPECIFIC TO THE LAKE CHAD BASIN
+c The DEM is in error in many locations therefore, it is often
+c necessary to consult accurate charts and correct the data in the
+c DEM manually. The corrections below can be a guide.
+c
+c Correct the Chad basin at Grande Barierre. Currently the north 
+c portion of the mid-level lake is too deep. There are elevations 
+c which are from 220-260 m when they probably should be around 279 m.
+c The south portion of the basin is too shallow. Elevations are
+c about 281m and should be perhaps 275.
+c
+      do 910 j = 291,304
+       do 911 i = 454,464
+        if(dem(i,j) .le. 282.) then
+         dem(i,j) = dem(i,j)-3.
+        endif
+        if(dem(i,j) .eq. 283.) then
+         dem(i,j) = dem(i,j)-2.
+        endif
+        if(dem(i,j) .gt. 283.) then 
+         dem(i,j) = dem(i,j)-1.
+        endif
+911    continue
+910   continue
+ 
+      do 912 j = 278,309
+       do 913 i = 430,453
+        dem(i,j) = max(dem(i,j), 280.)
+913    continue
+912   continue
 c
 c--------------------------------------------------------------
 c initialize variables
@@ -215,11 +244,12 @@ c
         deptm(i,j) = 0.
 c       vollm(i,j) = 0.
 c       dvollm(i,j) = 0.
+        fin(i,j) = 0.
+        fout(i,j) = 0.
         voll(i,j) = 0.
         volb(i,j) = 0.
         volr(i,j) = 0.
         volt(i,j) = 0. ! Total (potential) volume for each PWA
-        volt2(i,j) = 0. ! Total (potential) volume for each cell
         dvoll(i,j) = 0.
         tempdl(i,j) = 0.
         tempdr(i,j) = 0.
@@ -305,7 +335,6 @@ c
           if((jj .gt. 0).and. (jj .le. jend))then
            volt(ii,jj) = volt(ii,jj) + 
      *        max(sillh(i,j)-dem(i,j),0.1)*area(j)
-           volt2((i-istart+1),(j-jstart+1))=volt(ii,jj)
            !write(*,*) i,ii,j,jj,volt2(i,j),dem(i,j)
           endif
          endif
@@ -361,24 +390,24 @@ c
        write(*,*)"spin up yr",iyear
       else 
        write(*,*)"simulation",iyear
-       endif 
+      endif 
 c
 c monthly loop
 c
       do 131 imon = 1,12
-c     
-c re-initialize some variables each month.
-c
-      do j = 1,inrf
-       do i = 1,incf
-        sfluxout(i,j,imon) = 0.
-        laream(i,j) = 0.
-       enddo
-      enddo
 c
 c write a few diagnostics
 c
       write(*,*)'begin mon ',imon
+c
+c re-initialize some variables each month.
+c
+       do j = 1,inrf
+        do i = 1,incf
+         sfluxout(i,j,imon) = 0.
+         laream(i,j) = 0.
+        enddo
+       enddo
 c
 c start the daily loop
 c
@@ -420,7 +449,7 @@ c
 c
         km = imon-1 ! Interpolate from preceding month
 c
-        if(icmon .eq. 1) km = 12 ! Unless in January
+        if(imon .eq. 1) km = 12 ! Unless in January
 c
         rin   = max((runin(i2,j2,km)*area(j)) + ((iday+15)/30.)*
      *     ((runin(i2,j2,imon)*area(j)) -
@@ -439,30 +468,31 @@ c
 c
         km = imon+1
 c
-        if(icmon .eq. nmons) km = 697
+        if(imon .eq. nmons) km = 697
 c
         rin   = max((runin(i2,j2,imon)*area(j)) + ((iday-15)/30.)*
      *     ((runin(i2,j2,km)*area(j)) -
-     *     (runin(i2,j2,icmon)*area(j))),0.)
+     *     (runin(i2,j2,imon)*area(j))),0.)
         bin   = max((drainin(i2,j2,imon)*area(j)) + ((iday-15)/30.)*
      *     ((drainin(i2,j2,km)*area(j)) -
-     *     (drainin(i2,j2,icmon)*area(j))),0.)
+     *     (drainin(i2,j2,imon)*area(j))),0.)
         prcpl   = (prcpi(i2,j2,imon)*area(j)) + ((iday-15)/30.)*
      *     ((prcpi(i2,j2,km)*area(j)) -
-     *     (prcpi(i2,j2,icmon)*area(j)))
+     *     (prcpi(i2,j2,imon)*area(j)))
         evapl   = (evapi(i2,j2,imon)*area(j)) + ((iday-15)/30.)*
      *     ((evapi(i2,j2,km)*area(j)) -
-     *     (evapi(i2,j2,icmon)*area(j)))
+     *     (evapi(i2,j2,imon)*area(j)))
 c
        endif ! End daily climate loop
 c       if (runin(i2,j2,km).gt.0.) then
 c        !write(*,*) rin,prcpl,evapl
 c        write(*,*) runin(i2,j2,km),rin
 c       endif
-c       if ((ii.eq.sampi).and.(jj.eq.sampj)) then
-c               write(*,*) prcpi(i2,j2,km),area(j)
-c               write(*,*) rin,prcpl,evapl
-c       endif
+       if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+               write(*,*) icmon,iday
+               write(*,*) prcpi(i2,j2,icmon),prcpi(i2,j2,km),prcpl
+               write(*,*) evapi(i2,j2,icmon),evapi(i2,j2,km),evapl
+       endif
  
 c
 c --------------------------------------------------------------------
@@ -479,6 +509,9 @@ c calculate volume in runoff reservoir for land or lake
 c
        rout = volr(ii,jj)/timer
        volr(ii,jj) = max(volr(ii,jj) + (rin-rout)*delt,0.)
+       !rout = rin * delt
+       !volr(ii,jj) = rout
+       
 c       if (rin.gt.0.) then
 c        write(*,*) rin,rout,volr(ii,jj)
 c       endif
@@ -488,6 +521,8 @@ c
 c      bout = 0.75*volb(ii,jj)/timed + 0.25*volb(ii,jj)/timeg
        bout = volb(ii,jj)/timed
        volb(ii,jj) = max(volb(ii,jj) + (bin-bout)*delt,0.)
+       !bout = bin * delt
+       !volb(ii,jj) = bout
 c
 c----------------------------------------------------
 c calculate volume in transport reservoir
@@ -518,7 +553,7 @@ c subtract any evaporation from the lake from the outlet
 c location. The outlet is the accountant for the entire lake.
 c
       if(larea(i,j) .gt. 0.)then
-              write(*,*) larea(i,j)
+       !write(*,*) larea(i,j)
        tempdl(i2,j2) = tempdl(i2,j2) 
      *          + ((prcpl-evapl)*larea(i,j))*delt
       endif
@@ -573,7 +608,7 @@ c
          if(((i2 .gt. 0).and. (j2 .gt. 0)) 
      *        .and. (laket .eq. 0))then
 c
-          if ((ii.eq.sampi).and.(jj.eq.sampj).and.iday.eq.15) then
+c          if ((ii.eq.sampi).and.(jj.eq.sampj).and.iday.eq.15) then
                 !write(*,*) i,j,ii,jj,i2,j2,laket
                 !write(*,*) outnewi(i,j),outnewj(i,j),basin(i,j)
                 !write(*,*) voll(i2,j2),"gt",volt(i2,j2)
@@ -582,7 +617,7 @@ c                        write(*,*) "YES"
 c                else
 c                        write(*,*) "NO"
 c                endif
-          endif
+c          endif
 c if volume in basin > lake volume larea = 1. everywhere
 c outelv = sill height
 c

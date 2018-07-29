@@ -352,6 +352,7 @@ c
           if((jj .gt. 0).and. (jj .le. jend))then
            volt(ii,jj) = volt(ii,jj) + 
      *        max(sillh(i,j)-dem(i,j),0.1)*area(j)
+
           endif
          endif
         endif
@@ -459,7 +460,7 @@ c Lake Chad it is only about 30 years, for rivers only, no lakes it
 c is onlu one year, for the Great Lakes it can be several hundred
 c years (therefore, the convergence function can be useful).
 c
-      do 130 iyear = startyear,nyrs+spin
+      do 130 iyear = 1,spin+1
 c
 c calculate the number of years since the beginning of the run
 c not counting spin-up
@@ -473,19 +474,9 @@ c
         endif
 c
 c create leap year for the files I am using (starting at 1937)
-c **** CAN BE REMOVED ****
-c      if(iyear .le. 3)then   !start 1937
-c       if(iyear .le. leap) then   !start 1946
-c        ndaypm(2) = 28
-c       elseif(mod((iyear+leap)-startyear,4.) .eq. 0. )then
-c        ndaypm(2) = 29
-c       else
-c        ndaypm(2) = 28
-c       endif
 c
 c monthly loop
 c
-c       do 131 imon = 1,12
        do 131 imon = 1,12
 c
 c calculate the number of months from start of run, not counting the 
@@ -528,8 +519,8 @@ c
 c start the sub-daily timestep (one hour in this case but depends
 c on how delt is set).
 c
-c       do 133 kt = 1,int(nspday)
-c        ktstep = ktstep + 1
+       do 133 kt = 1,int(nspday)
+        ktstep = ktstep + 1
 c
 c start first spatial loop.
 c
@@ -600,7 +591,7 @@ c
 c
          endif
          !write(*,*) rin,prcpl,evapl
-c         if ((ii.eq.sampi).and.(jj.eq.sampj)) then
+c         if ((ii.eq.sampi).and.(jj.eq.sampj).and.(kt.eq.1)) then
 c                 write(*,*) icmon,iday
 c                 write(*,*) prcpi(i2,j2,icmon),prcpi(i2,j2,km),prcpl
 c                 write(*,*) evapi(i2,j2,icmon),evapi(i2,j2,km),evapl
@@ -655,8 +646,10 @@ c
 c
 c calculate volume in runoff reservoir for land or lake
 c
-         rout = volr(ii,jj)/timer
-         volr(ii,jj) = max(volr(ii,jj) + (rin-rout)*delt,0.)
+c         rout = volr(ii,jj)/timer
+c         volr(ii,jj) = max(volr(ii,jj) + (rin-rout)*delt,0.)
+         rout = rin ! SWAM mod
+         volr(ii,jj) = rout * delt ! SWAM mod
          if ((ii.eq.sampi).and.(jj.eq.sampj)) then
                  write(*,*) "r",rin,rout
                  write(*,*) "r",volr(ii,jj)
@@ -665,8 +658,10 @@ c
 c calculate volume in baseflow reservoir, land only
 c
 c        bout = 0.75*volb(ii,jj)/timed + 0.25*volb(ii,jj)/timeg
-         bout = volb(ii,jj)/timed
-         volb(ii,jj) = max(volb(ii,jj) + (bin-bout)*delt,0.)
+c         bout = volb(ii,jj)/timed
+c         volb(ii,jj) = max(volb(ii,jj) + (bin-bout)*delt,0.)
+         bout = bin ! SWAM mod
+         volb(ii,jj) = bout * delt ! SWAM mod
          if ((ii.eq.sampi).and.(jj.eq.sampj)) then
                  write(*,*) "b",bin,bout
                  write(*,*) "b",volb(ii,jj)
@@ -696,7 +691,8 @@ c
           tempdr(ii,jj) = ((rout+
      *            bout)*(1.-larea(i,j))-irrout
      *           + (sfluxin(ii,jj) - fluxout(ii,jj)))*delt
-c
+
+
 c subtract any evaporation from the lake from the outlet
 c location. The outlet is the accountant for the entire lake.
 c
@@ -864,14 +860,13 @@ c or to the outlet location. The fluxout of the cell which
 c corresponds to the sill is calculated for only that water 
 c volume in excess of the volume required to fill the lake.
 c
-c       effvel = 0.5 !alternatively could set velocity to a  constant
-c       effvel = 0.003 !approximately the flow from Coe 1998 at 1day dt
+         effvel = 0.3 !alternatively could set velocity to a  constant
 c
          fluxout(ii,jj) = max((voll(ii,jj)-volt(ii,jj))*
      *                  (effvel/dist),0.)
-         fluxout(ii,jj) = max(min(fluxout(ii,jj),
-     *           sfluxin(ii,jj) + temp(ii,jj) +
-     *           ((voll(ii,jj)-volt(ii,jj))/(delt*2.))),0.)
+c         fluxout(ii,jj) = max(min(fluxout(ii,jj),
+c     *           sfluxin(ii,jj) + temp(ii,jj) +
+c     *           ((voll(ii,jj)-volt(ii,jj))/(delt*2.))),0.)
 c
 c Truncate fluxout if too small for computation. 
 c
@@ -992,7 +987,7 @@ c      write(38,*)'areat  = ',areat(2343-(istart-1),969-(jstart-1))/1.e+6
 c
 c end of flux calculations
 c
-c 133   continue   !end hourly loop
+ 133   continue   !end hourly loop
  132   continue   !end daily loop
 c
 c This is a check to make sure that the volume of water stored in

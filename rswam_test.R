@@ -3,11 +3,11 @@
 
 require(raster)
 dyn.load("./src/rswam.so")
-rswam1 <- function(nyrs, startyear, converg = 0, laket = 0, spin = 1,
-                   normal = 1, leap = 1, irrig = 1,
-                   outnewi, outnewj, basin, dem, rivdir, mflac,
-                   prcpi, evapi, runin, drainin,
-                   gridxf, gridyf) {
+rswam <- function(nyrs, startyear, converg = 0, laket = 0, spin = 1,
+                  normal = 1, leap = 1, irrig = 1,
+                  outnewi, outnewj, basin, dem, rivdir, mflac,
+                  prcpi, evapi, runin, drainin,
+                  gridxf, gridyf) {
   
   simcf = .Fortran("rswam",
                    nyrs = as.integer(nyrs),
@@ -58,18 +58,18 @@ runoff = aperm(as.array(runoff.r.m), c(2,1,3))
 
 demf.r = crop(dem.r, extent(prec.r.y))
 basinf.r = crop(basin.r, extent(prec.r.y))
+rivdirf.r = crop(rivdir.r, extent(prec.r.y))
 mflacf.r = crop(mflac.r, extent(prec.r.y))
 
 ## Grid dimensions
 gridxf = 216
 gridyf = 216
 
-hydro.out = rswam1(nyrs, startyear, converg, laket, spin,
-                   normal, leap, irrig,
-                   outnewi, outnewj, basin, 
-                   dem, rivdir, mflac,
-                   prcpi=prec, evapi=evap, 
-                   runin=runoff, drainin=drain,
-                   gridxf, gridyf)
+hydro.out = rswam(nyrs, startyear, converg, laket, spin,
+                  normal, leap, irrig,
+                  outnewi, outnewj, basin, 
+                  dem, rivdir, mflac,
+                  prcpi=prec, evapi=evap, 
+                  runin=runoff, drainin=drain,
+                  gridxf, gridyf)
 
-stop()
